@@ -1,0 +1,139 @@
+==========================================================================
+$Id: README 37311 2012-05-23 23:26:39Z sacks $
+$URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_120525/gen_atm_ocn_maps/README $
+==========================================================================
+
+
+===============
+ABOUT THIS TOOL
+===============
+
+This directory contains a shell script that generates conservative and bilinear
+mapping files for ocean grid to atm grid AND atm grid to ocn grid mapping. The
+resulting conservative ocean mapping file should be used as input to gen_domain,
+which is located in ../gen_domain/ (and must be built in gen_domain/src/). If 
+the ocean and atm grids are identical then the mapping file will simply be unity
+and the atm fraction will be one minus the ocean fraction. After generating the
+5 mapping files, the ESMF tool located in ../check_maps is used to check the
+quality of each of the maps.
+
+Note that the ESMF tool must be built prior to running gen_atm_ocn_maps.sh, 
+unless you use the --nogridcheck or --recompile option. Also note that skipping
+the grid check is not recommended, but at this time the check_map utility can
+only run on bluefire.
+
+=======================
+USAGE: INTERACTIVE MODE
+=======================
+
+gen_atm_ocn_maps.sh 
+  --fileocn|-focn  input ocn_grid_filename (required) 
+  --fileatm|-fatm  input atm_grid_filename (required)
+  --nameocn|-nocn  output ocn_name in mapping file (required)
+  --nameatm|-natm  output atm_name in mapping file (required)
+  [ --typeocn|tocn ] [regional|global]
+  [ --typeatm|tatm ] [regional|global]
+  [ --nogridcheck ]
+  [ --batch|-b ]
+  [ --help|-h ]
+  [ -v ]
+ 
+where 
+ --fileocn (or -focn) 
+   SCRIP grid format ocean filename (full pathname)
+ --fileatm (or -fatm) 
+   SCRIP grid format atmosphere filename (full pathname)
+ --nameocn (or -nocn) and --nameatm (or -nocn) will result in the 
+   following mapping files
+     nameocn_TO_nameatm_aave.cdate.nc
+     nameocn_TO_nameatm_blin.cdate.nc
+     nameatm_TO_nameocn_aave.cdate.nc
+     nameatm_TO_nameocn_blin.cdate.nc
+ --typeocn (or -tocn) 
+   ocean grid type,  valid values are regional or global
+   default is global
+ --typeatm (or -tatm) 
+   atm grid type, valid values are regional or global
+   default is global
+ --nogridcheck 
+   By default, script will run consistency check on new
+   maps; this flag disables these checks
+ --batch (or -b) 
+   Toggles batch mode usage. If you want to run in batch mode
+   you need to have a separate batch script for a supported machine
+   that calls this script interactively - you cannot submit this
+   script directly to the batch system
+ -rc 
+   Pass the "--recompile" flag to the ESMF tool
+   (Only necessary if nothing has been built in ../check_maps/)
+ -d 
+   toggle debug-only 
+ --help or -h  
+   displays this help message
+
+You can also set the following env variables:
+  ESMFBIN_PATH - Path to ESMF binaries 
+                 (default is /contrib/esmf-5.2.0r-64-O/bin)
+  MPIEXEC ------ Name of mpirun executable
+                 (default is mpirun.lsf)
+  REGRID_PROC -- Number of MPI processors to use
+                 (default is 8)
+
+=================
+USAGE: BATCH MODE
+=================
+
+Currently, batch mode is only set up for bluefire. This uses
+regridbatch.sh as a wrapper to gen_atm_ocn_maps.sh.
+
+IMPORTANT NOTE: check_maps is NOT run when you run in batch mode. This
+must be run as a separate step after you have created the mapping
+files. See below for an example of how to do this.
+
+(1) Modify the #BSUB lines at the top of regridbatch.sh. You need to
+at least specify a project number; you may want to change some of the
+other settings, too.
+
+(2) Modify the variables in the section labeled "Set user-defined
+parameters here". See the documentation for gen_atm_ocn_maps.sh,
+above, for more details on the parameters that can be set here.
+
+(3) Submit with:
+
+bsub < regridbatch.sh
+
+(4) Run the check_maps tool on the generated mapping files; e.g.:
+
+    files=*.nc
+    ../check_maps/check_map.sh $files
+
+total 2532885
+-rwxr-xr-x 1 raeder p86850054 370721344 Aug 20  2012 map_ne120_TO_re025_patc.120820.nc
+-rwxr-xr-x 1 raeder p86850054 285852544 Aug 21  2012 map_ne30_TO_re025_patc.120821.nc
+-rwxr-xr-x 1 raeder p86850054 238070304 Aug 20  2012 map_ne120_TO_re025_blin.120820.nc
+-rwxr-xr-x 1 raeder p86850054 237549428 Aug 20  2012 map_re025_TO_ne120_aave.120820.nc
+-rwxr-xr-x 1 raeder p86850054 237173268 Aug 20  2012 map_ne120_TO_re025_aave.120820.nc
+-rwxr-xr-x 1 raeder p86850054 228929920 Aug 20  2012 map_re025_TO_ne120_blin.120820.nc
+-rwxr-xr-x 1 raeder p86850054 153316508 Aug 21  2012 map_ne30_TO_re025_blin.120821.nc
+-rwxr-xr-x 1 raeder p86850054 127160192 Aug 21  2012 map_re025_TO_ne30_aave.120821.nc
+-rwxr-xr-x 1 raeder p86850054 126880848 Aug 21  2012 map_ne30_TO_re025_aave.120821.nc
+-rwxr-xr-x 1 raeder p86850054 111531740 Aug 21  2012 map_re025_TO_ne30_blin.120821.nc
+-rw-r--r-- 1 raeder p86850054 103682424 Nov 14  2018 domain.ocn.025.120821-30.nc
+-rwxr-xr-x 1 raeder p86850054 103682224 Aug 21  2012 domain.ocn.025.120821.nc
+-rwxr-xr-x 1 raeder p86850054 103682220 Aug 30  2012 domain.ocn.025.120830.nc
+-rwxr-xr-x 1 raeder p86850054  77762424 Aug 21  2012 domain.lnd.ne120.025_025.120821.nc
+-rwxr-xr-x 1 raeder p86850054  77762424 Aug 21  2012 domain.ocn.ne120.025_025.120821.nc
+-rwxr-xr-x 1 raeder p86850054   4862420 Aug 30  2012 domain.lnd.ne30.025_025.120830.nc
+-rwxr-xr-x 1 raeder p86850054   4862420 Aug 30  2012 domain.ocn.ne30.025_025.120830.nc
+-rwxr-xr-x 1 raeder p86850054     15160 Jul  9  2012 gen_atm_ocn_maps.sh
+-rwxr-xr-x 1 raeder p86850054      4024 Jul  9  2012 README
+-rwxr-xr-x 1 raeder p86850054      1823 Jul  9  2012 regridbatch.bluefire.sh
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET0.RegridWeightGenCheck.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET0.RegridWeightGen.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET1.RegridWeightGen.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET2.RegridWeightGen.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET3.RegridWeightGen.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET4.RegridWeightGen.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET5.RegridWeightGen.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET6.RegridWeightGen.Log
+-rwxr-xr-x 1 raeder p86850054       350 Aug 21  2012 PET7.RegridWeightGen.Log

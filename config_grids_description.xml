@@ -1,0 +1,214 @@
+Summary
+
+<grid_data version="2.0">
+  <grids>
+    <model_grid_defaults>
+      <grid name="atm"    compset="SATM"  >null</grid>
+      <grid name="lnd"    compset="SLND"  >null</grid>
+      <grid name="ocnice" compset="SOCN"  >null</grid>
+      <grid name="rof"    compset="SROF"  >null</grid>
+      <grid name="rof"    compset="DWAV"  >rx1</grid>
+      ...
+    </model_grid_defaults>
+
+    <model_grid alias="f09_d025">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">d.25x.25</grid>
+    </model_grid>
+
+
+    <model_grid alias="f09_f09" not_compset="_POP" >
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">0.9x1.25</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+    <!-- KDR Do I need one of these for the FV 1 degree d.25x.25 gland20 grid? -->
+
+
+    <!--  spectral element grids -->
+
+    <model_grid alias="ne120_ne120" not_compset="_POP">
+      <grid name="atm">ne120np4</grid>
+      <grid name="lnd">ne120np4</grid>
+      <grid name="ocnice">ne120np4</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <!-- new runoff grids for data runoff model DROF -->
+
+
+  </grids>
+
+  <!-- ======================================================== -->
+  <!-- Component grid domain specifications -->
+  <!-- ======================================================== -->
+
+  <domains>
+
+    <domain name="0.9x1.25">
+      <nx>288</nx>  <ny>192</ny>
+      <file grid="atm|lnd">domain.lnd.fv0.9x1.25_gx1v6.090309.nc</file>
+      <file grid="ocnice">domain.ocn.0.9x1.25_gx1v6_090403.nc</file>
+      <desc>0.9x1.25 is FV 1-deg grid:</desc>
+    </domain>
+
+<!-- KDR Adding d.25x.25 DOCN grid filename.  The file was created in 
+     /glade/p/work/raeder/Models/cesm1_4_beta06/cime/tools/mapping/gen_domain_files. 
+     The only other ocean "<domain name" with a  lnd_mask in it uses the ocean grid
+     as the label, and only that label appears in the file name.
+     Does this mean that it's a land model on the gx1v6 grid?
+    <domain name="gx1v6">
+      <nx>320</nx>  <ny>384</ny>  
+      <file lnd_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>
+      <file ocn_mask="gx1v6">domain.ocn.gx1v6.090206.nc </file>  
+    <domain name="d.25x.25">
+      <nx>1440</nx> <ny>720</ny>
+      <file grid="atm|lnd">/glade/p/work/raeder/Models/cesm1_4_beta06/cime/tools/mapping/gen_domain_files/domain.lnd.fv0.9x1.25_d.25x.25.150907.nc</file>
+      <file grid="ocnice">/glade/p/work/raeder/Models/cesm1_4_beta06/cime/tools/mapping/gen_domain_files/domain.ocn.d.25x.25.150824.nc</file>
+      <desc>d.25x.25 is the AVHRR SST grid:</desc>
+      <support>Experimental, under development; Kevin Raeder</support>
+    </domain>
+    -->
+
+
+  </domains>
+
+  <!-- ======================================================== -->
+  <!-- Mapping -->
+  <!-- ======================================================== -->
+  <!--
+       Anything that needs a mapping file
+       2 comp on same grid; no mapping
+       Others; only if they talk to each other
+          Newer CESM; no CISM to ocn mapping
+           Will die at run time.
+        Meeting with Bill yielded potential mapping files needed for CAM.
+          atm      <-> land
+          atm      <-> ocn
+          atm      <-> cice
+          lnd      <-> land ice
+          lnd      <-> river
+          land ice  -> ocn
+          river     -> ocn
+
+        FMAP means flux      aave  {_da}
+        SMAP means state     patch or bilin or aave      {_da}
+        RMAP means runoff
+        VMAP means ???       patch or bilin or patc or aave or native    {_da}
+                                    often matches SMAP
+   -->
+
+
+  <!-- The following are the required grid maps that must not be idmap if the   -->
+  <!-- attributes grid1 and grid2 are not equal -->
+
+  <required_gridmaps>
+    <required_gridmap grid1="atm_grid" grid2="ocn_grid">ATM2OCN_FMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="ocn_grid">ATM2OCN_SMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="ocn_grid">ATM2OCN_VMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="ocn_grid">OCN2ATM_FMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="ocn_grid">OCN2ATM_SMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="lnd_grid">ATM2LND_FMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="lnd_grid">ATM2LND_SMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="lnd_grid">LND2ATM_FMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="lnd_grid">LND2ATM_SMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="wav_grid">ATM2WAV_SMAPNAME</required_gridmap>
+    <required_gridmap grid1="ocn_grid" grid2="wav_grid">OCN2WAV_SMAPNAME</required_gridmap>
+    <required_gridmap grid1="ocn_grid" grid2="wav_grid">ICE2WAV_SMAPNAME</required_gridmap> <!-- ??? -->
+    <!-- <required_gridmap grid1="ocn_grid" grid2="rof_grid" not_compset="_POP">ROF2OCN_FMAPNAME</required_gridmap> ?? -->
+    <required_gridmap grid1="ocn_grid" grid2="rof_grid" >ROF2OCN_LIQ_RMAPNAME</required_gridmap>
+    <required_gridmap grid1="ocn_grid" grid2="rof_grid" >ROF2OCN_ICE_RMAPNAME</required_gridmap>
+    <required_gridmap grid1="lnd_grid" grid2="rof_grid">LND2ROF_FMAPNAME</required_gridmap>
+    <required_gridmap grid1="lnd_grid" grid2="rof_grid">ROF2LND_FMAPNAME</required_gridmap>
+  </required_gridmaps>
+
+  <gridmaps>
+
+    <!--- atm to ocean and ocean to atm mapping files -->
+
+<!-- KDR for ATM_forc -->
+    <gridmap atm_grid="0.9x1.25" ocn_grid="d.25x.25">
+      <map name="ATM2OCN_FMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_fv0.9x1.25_TO_d.25x.25_aave.160303.nc</map>
+      <map name="ATM2OCN_SMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_fv0.9x1.25_TO_d.25x.25_blin.160303.nc</map>
+      <map name="ATM2OCN_VMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_fv0.9x1.25_TO_d.25x.25_patc.160303.nc</map>
+      <map name="OCN2ATM_FMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_d.25x.25_TO_fv0.9x1.25_aave.160303.nc</map>
+      <map name="OCN2ATM_SMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_d.25x.25_TO_fv0.9x1.25_blin.160303.nc</map>
+    </gridmap>
+<!-- KDR end  ? Should the last one be blin instead of aave? It runs this way, but seems inconsistent-->
+
+
+    <gridmap atm_grid="0.9x1.25" ocn_grid="gx1v6">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v6_aave.130322.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v6_blin.130322.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gx1v6_patc.130322.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_fv0.9x1.25_aave.130322.nc</map>
+    </gridmap>
+    <gridmap atm_grid="ne120np4" lnd_grid="0.9x1.25">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne120np4/map_ne120np4_TO_fv0.9x1.25_aave.120712.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne120np4/map_ne120np4_TO_fv0.9x1.25_aave.120712.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_ne120np4_aave.120712.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_ne120np4_aave.120712.nc</map>
+    </gridmap>
+<!-- KDR Use this one for ATM_forc FV 1 degree 1/4 degree ocean -->
+    <gridmap lnd_grid="0.9x1.25" rof_grid="r05">
+      <map name="LND2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.9x1.25_nomask_to_0.5x0.5_nomask_aave_da_c120522.nc</map>
+      <map name="ROF2LND_FMAPNAME">lnd/clm2/mappingdata/maps/0.9x1.25/map_0.5x0.5_nomask_to_0.9x1.25_nomask_aave_da_c121019.nc</map>
+    </gridmap>
+
+
+<!-- KDR  Default run-off model to new (AVHRR) 1/4 degree ocean -->
+    <gridmap rof_grid="r05" ocn_grid="d.25x.25" >
+      <map name="ROF2OCN_FMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_r05_to_d.25_nnsm_e1000r300_160229.nc</map>
+      <map name="ROF2OCN_LIQ_RMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_r05_to_d.25_nnsm_e1000r300_160229.nc</map>
+      <map name="ROF2OCN_ICE_RMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_r05_to_d.25_nnsm_e1000r300_160229.nc</map>
+    </gridmap>
+<!-- KDR end -->
+
+    <gridmap lnd_grid="0.9x1.25" glc_grid="gland5" >
+      <map name="LND2GLC_FMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland5km_aave.150514.nc</map>
+      <map name="LND2GLC_SMAPNAME">cpl/gridmaps/fv0.9x1.25/map_fv0.9x1.25_TO_gland5km_blin.150514.nc</map>
+      <map name="GLC2LND_FMAPNAME">cpl/gridmaps/gland5km/map_gland5km_TO_fv0.9x1.25_aave.150514.nc</map>
+      <map name="GLC2LND_SMAPNAME">cpl/gridmaps/gland5km/map_gland5km_TO_fv0.9x1.25_aave.150514.nc</map>
+    </gridmap>
+<!--  KDR Why did I need these vvv instead of ^^^^^  in GWD_TMS_CLUBB case?
+      SAME for gland5UM, below.
+      <map name="GLC2LND_FMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_gland5km_TO_fv0.9x1.25_aave.160303.nc</map>
+      <map name="GLC2LND_SMAPNAME">/glade/p/work/raeder/Exp/GWD_TMS_CLUBB/mapping/gridmaps/map_gland5km_TO_fv0.9x1.25_aave.160303.nc</map>
+-->
+
+    <!-- ======================================================== -->
+    <!-- GRIDS: glc to ocn mapping                                -->
+    <!-- ======================================================== -->
+
+  </gridmaps>
+
+</grid_data>
+
+  <help>
+    =========================================
+    GRID naming convention
+    =========================================
+
+KDR; the long name no longer appears in the config_grids.xml file
+    The long grid name has the order atm,lnd,ocn/ice,river,mask,glc
+    The following shortname is used
+    a% => atm, l% => lnd, oi% => ocn/ice, r% => river, m% => mask, g% => glc, w% => wav
+
+    The notation for the grid longname is
+    a%name_l%name_oi%name_r%name_m%mask_g%name_w%name
+
+    Supported out of the box grid configurations are given via alias specification in
+    the file "config_grids.xml". Futhermore, each grid alias  can also be associated
+    with the following optional attributes
+    compset       (Regular expression for compset matches that are required for this grid)
+    not_compset   (Regular expression for compset matches that are not permitted this grid)
+
+    Using the alias and the optional "compset" and "not_compset" attributes a grid longname is created
+    Note that the mask is for information only - and is not an attribute of the grid
+    By default, if the mask is not specified below, it will be set to the ocnice grid
+    And if there is no ocnice grid (such as for single column, the mask is null since it does not mean anything)
+  </help>
+

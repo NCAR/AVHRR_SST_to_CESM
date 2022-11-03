@@ -1,0 +1,390 @@
+See 2022-11-1, below, for most recent way to make SST files.
+
+And 2018-11-15 for some history.
+See before that line for older history.
+----------------------------
+
+The 1/4 degree Reynolds SSTs are available in
+/home/tomas/ds277.7/avhrr/avhrr-only-v2.20050101_cat_20051231_filled_c130829.nc
+This data set runs through 2013-7 so far, but the raw data are available from
+monthly updates.
+
+It looks like it's ready to be used by CAM, 
+except that the files I've used are monthly (CAM interpolates to daily)
+while these are daily.
+>  What do I need to change in CAM to use these?
+
+I may be able to make more recent dates using 
+/glade/u/home/tomas/frank/high_res_data/forcing_summer_13/make_sst_ice_forcing.ncl
+(see local copy) which was used to make
+avhrr-only-v2.20050101_cat_20051231_filled_c130829.nc
+And a script which fills in the land areas using a Poisson scheme.  
+This solves problems created when there are grid boxes where CAM 
+expects to find an SST value but there isn't one in the Reynold's SST (there is land).
+./fill_sst_forcing.ncl
+See 2018-11-15, below, for my attempt to do this.
+
+I need a domain.ocn file.  The make_sst_ice_forcing.ncl lists
+/glade/home/tomas/cesm/cesm1_1_beta15/mapping/gen_atm_ocn_maps/domain.ocn.0.25.120821.nc
+but I can't find that file in the more modern location:
+/glade/u/home/tomas/...anywhere
+Nor on the HPSS.
+Ha! I did find an archive of Bob Tomas' home directory:
+/home/tomas/home_bf_31jan13.tar
+which I could download.  The file seems to be in there!
+
+Is this in a form CAM can use?
+
+See also email from Robert Tomas 2015-7-17.
+
+---------------------------
+2015-7-31
+Starting to define a new compset (2016-2-29; actually a 'resolution').
+   x Get new CAM tag (and CESM host?) from Eaton
+   x Read Bob's /glade/u/home/tomas/cesm1_cases_doc/f.e11.b16.F2000C5.ne120_025_bob_011bf.txt
+     Instructions in http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/usersguide/x2417.html
+        SCRIP files:
+           See /glade/p/cesmdata/cseg/mapping/makemaps/0.25x0.25_fv0.47x0.63_100723
+        ?  /glade/p/cesmdata/cseg/mapping/grids/0.25x0.25_100723.nc
+        ?  ..................................../fv0.9x1.25_141008.nc
+        Tomas used in $p/Models/CAM_init/SST/gen_atm_ocn_maps/regridbatch.bluefire.sh
+        CESM1.2 web says build the check_map.sh utility
+> cd $p/Models/cesm1_4_beta06/cime/tools/mapping/check_maps
+Follow instructions in README
+Those files don't work in check_maps.
+Because they're grid files?  SCRIP files?  both?
+Ah, maybe I was supposed to just build it, not run it yet.
+
+Move on to Step 3 of instructions:
+> $CCSMROOT/tools/mapping/gen_mapping_files/gen_cesm_maps.sh
+  should generate mapping files.
+  But it needs the SCRIP files I was supposed to find in 1.
+  The example scripts:
+      regridbatch.yellowstone.sh   
+         griddir1="/glade/scratch/mlevy/grids"
+         fileocn="${griddir1}/tx0.1v2_090127.nc"
+         cmdargs="--fileocn $fileocn ...
+         env REGRID_PROC=$REGRID_PROC ./gen_cesm_maps.sh $cmdargs
+      
+      But /glade/scratch/mlevy/grids/tx0.1v2_090127.nc    doesn't exist anymore.
+      But but look in /glade/p/cesmdata/cseg/mapping/makemaps/0.25x0.25_fv0.47x0.63_100723
+         scrip_makemaps.csh refers to the outdated
+            /fis/cgd/cseg/csm/mapping/grids
+         The modern location is (?)
+            /glade/p/cesmdata/cseg/mapping/grids
+         In there I see  (the same files I tried in check_maps, above)
+            0.25x0.25_100723.nc
+            fv0.9x1.25_141008.nc
+         This uses ESMF offline weight generation utility, which I need to build(?).
+         No
+         $ module load esmf
+         $ module load esmf-6.3.0r-ncdfio-uni-O
+         $ which ESMF_RegridWeightGen
+           /glade/apps/opt/esmf/6.3.0r-ncdfio/intel/12.1.5/bin/binO/Linux.intel.64.mpiuni.default/ESMF_RegridWeightGen
+     
+      So, modify regridbatch.yellowstone.sh to use the grid files:
+        griddir1="/glade/p/cesmdata/cseg/mapping/grids"
+        fileocn="${griddir1}/0.25x0.25_100723.nc"
+        fileatm="${griddir1}/fv0.9x1.25_141008.nc"
+      I submitted regrid... in 
+         /glade/p/work/raeder/Models/cesm1_4_beta06/cime/tools/mapping/gen_mapping_files
+
+4. Generate atmosphere, land and ocean / ice domain files.
+   The instructions in 
+      /glade/p/work/raeder/Models/cesm1_4_beta06/cime/tools/mapping/gen_domain_files/INSTALL
+   needed to have -cimeroot $CIMEROOT appended to the configure command
+   After building gen_domain, I ran
+   $ gen_domain -m ../gen_mapping_files/map_0.25x0.25_TO_fv0.9x1.25_aave.150824.nc \
+                -o 0.25x0.25 \
+                -l fv0.9x1.25 \
+                -c "domain file for a 1/4-degree ocean + 1-degree FV atmosphere for ATM_forc_XXX assimilations"
+     write domain.lnd.fv0.9x1.25_0.25x0.25.150824.nc
+     successfully created domain file domain.lnd.fv0.9x1.25_0.25x0.25.150824.nc
+     write domain.ocn.fv0.9x1.25_0.25x0.25.150824.nc
+     successfully created domain file domain.ocn.fv0.9x1.25_0.25x0.25.150824.nc
+
+7.  Manually created 
+    /glade/p/work/raeder/Models/cesm1_4_beta06/cime/tools/mapping/gen_domain_files/ATM_forc_XXX.xml
+    I removed all the GLOB lines because each of these component grids already exists in CESM.
+
+8.  Need to append mapping file path names to the end of user_nl_cpl during the setup:
+       setenv MAPPING_FILE_LOC = /glade/p/work/raeder/Models/cesm1_4_beta06/cime/tools/mapping/gen_mapping_files
+       atm2ocnFmapname='$MAPPING_FILE_LOC/map_fv0.9x1.25_TO_0.25x0.25_aave.150824.nc'
+       atm2ocnSmapname='$MAPPING_FILE_LOC/map_fv0.9x1.25_TO_0.25x0.25_blin.150824.nc'
+       atm2ocnVmapname='$MAPPING_FILE_LOC/map_fv0.9x1.25_TO_0.25x0.25_patc.150824.nc'
+       ocn2atmFmapname='$MAPPING_FILE_LOC/map_0.25x0.25_TO_fv0.9x1.25_aave.150824.nc'
+       ocn2atmSmapname='$MAPPING_FILE_LOC/map_0.25x0.25_TO_fv0.9x1.25_aave.150824.nc'
+       lnd2rofFmapname='$MAPPING_FILE_LOC/not_created_for_data_ocean_runs'
+       rof2lndFmapname='$MAPPING_FILE_LOC/not_created_for_data_ocean_runs'
+    This is installed in $trunk_cam/shell_scripts/CESM1_4_b6_setup_advanced.
+
+===================================================
+2018-11-15
+
+It's hard to parse how files like 
+avhrr-only-v2.20100101_cat_20101231_filled_c130829.nc
+were created from a series of files like
+/gpfs/fs1/collections/rda/data/ds277.7/avhrr/2010/avhrr-only-v2.20100101.nc.
+>>> See Make_yearly_from_daily/avhrr_sst_to_cesm.csh
+    to see how to do it. <<<
+
+Tracing backwards
+> ncdump -h avhrr-only-v2.20100101_cat_20101231_filled_c130829.nc
+  ...
+  :creation_script = "/glade/u/home/tomas/frank/high_res_data/forcing_summer_13/make_sst_ice_forcing.ncl" ;
+  :author = "Bob Tomas" ;
+  :creation_date = "Thu Aug 29 10:54:29 MDT 2013" ;
+  :input_files = "/glade/scratch/tomas/ds277.7/avhrr/avhrr-only-v2.20100101_cat_20101231.nc    
+  [Note that this has no _filled or _forcing in the name.
+   Current versions of make_sst_ice_forcing.ncl put _forcing in the name
+                  /glade/scratch/tomas/ds277.7/avhrr/domain.ocn.0.25.120821.nc" ;
+  :history = "Wed Aug 15 13:58:14 2018: 
+             ncatted -a calendar,time,c,c,gregorian avhrr-only-v2.20100101_cat_20101231_filled_c130829.nc" ;
+  [This just added the gregorian attribute to variable 'time',
+   which I'd like to do as part of the file creation instead.]
+
+
+>> make_sst_ice_forcing.ncl 
+   <    avhrr-only-v2.20100101_cat_20101231.nc 
+   >(?) avhrr-only-v2.20100101_cat_20101231_forcing.nc
+>> fill_sst_forcing.ncl  (according to the code.  Did not add its steps to the history)
+   <    avhrr-only-v2.20100101_cat_20101231_forcing.nc
+   >    avhrr-only-v2.20100101_cat_20101231_filled_c130829.nc
+
+===================================================
+2020-01-27
+I replaced all of the avhrr-only-v2.201[1-7]_filled_c*.nc
+with files that don't have the days from the bracketing years.
+So now each file has just the days from the year in the file name.
+Temporarily, the files with the bracketing days are in 
+$fname:r_temp.nc
+
+===================================================
+2021-10-26  KDR
+New, unfortunate developments:
+We discovered in inconsistency between the definition of the time
+"valid at mid day" and the values (whole numbers of days since 1978-01-01 *00Z*).  
+Partly as a result of this(?) the avhrr data set on the RDA was replaced 
+with different SSTs sometime in 2020.  
+They weren't just relabeled with consistent times.
+They were supposedly remaking the same data set, but the new fields
+did not even look like midpoints between the old fields.
+I could not get an explanation from CISL or the original creators (email).
+(See also email with Gaubert, who wanted part of 2020 in late 2020.)
+[See 2021-11-5 below for context Ben dug up]
+
+The file I created to cover through 2020-05 has fractional days for the 
+span in 2020, but whole numbers before that.
+avhrr-only-v2.2011-202005_0Z_filled_c200807.nc
+"Center time of the day" ;
+ time:units = "days since 1978-01-01 00:00:00
+So the earlier times are (still) not consistent with that description,
+while the later times are.  Also see the skip from 15339 to 15340.5.
+
+For a while the old files were available on glade.
+They were not used to make
+avhrr_v2.1-only-v2.20200101-20200607_filled_c200622.nc
+which has whole day times from 1978-01-01 *12:00:00*.
+So that's internally consistent.
+
+So what do we have?
+avhrr-only-v2.2011-202001_0Z_filled_c200810  extends through 2020-1-30.
+   It has whole number days throughout.
+   The time for 1978-1-1 is 0 because a script that counted that day as 1 and yielded
+   > ./date_from_daynum.csh 15340  -> 2019-12-31  
+   while /gpfs/fs1/collections/rda/decsdata/ds277.7/V/avhrr/avhrr-only-v2.20200101.time
+   has that day number.
+   I've updated the script to count as the files do, from 0.
+   That series of files only goes through 2020-4-13.
+   This is described (in the nc files) as
+      "Reynolds, et al.(2007) Daily High-resolution Blended Analyses.
+       Available at ftp://eclipse.ncdc.noaa.gov/pub/OI-daily/daily-sst.pdf
+       Climatology is based on 1971-2000 OI.v2 SST, Satellite data: Navy NOAA18 METOP AVHRR, Ice data: NCEP ice"
+
+avhrr_v2.1-only-v2.20200101-20200607_filled_c200622.time extends through 2020-6-7
+   It has whole number days counted from 12:00 on 1978-01-01
+
+RDA says ds277.7 has data 1981-09-01 12:00 +0000 to 2021-10-10 12:00 +0000 
+   AVHRR iVersion 2.1 infrared satellite SST data
+   And now I see it from Jun 19  2020 :
+        /gpfs/fs1/collections/rda/data    /ds277.7  /avhrr_v2.1/2020/oisst-avhrr-v02r01.20200101.nc
+   old: /gpfs/fs1/collections/rda/decsdata/ds277.7/V/avhrr     /2020     /avhrr-only-v2.20200101.time
+   This is described as 
+      "uses Advanced Very High Resolution Radiometer (AVHRR) infrared satellite SST data. 
+       It also uses in situ data from ships and buoys and include a large-scale adjustment 
+       of satellite biases with respect to the in situ data."
+
+- - - - -
+So, I think the least ugly solution is to make a new file for the 2020-present assimilation.
+It will have times counted as whole days from 1978-01-01 12Z, which is day 0.
+It will use files 
+   /gpfs/fs1/collections/rda/data/ds277.7/avhrr_v2.1/2020/oisst-avhrr-v02r01.YYYYMMDD.nc
+It will also have data that seems inconsistent with the data in the 00Z files,
+but that discontinuity in the Reanalyses will be at the transition from 2019 to 2020.
+which is easier to describe or remember than part way through 2020,
+and won't require switching SST files then.
+It will need to have at least 1 time slot from 2019, so that CAM can interpolate
+between 2019-12-31 12Z and 2020-01-01 12Z when advancing from 2020-01-01 00Z to 12Z.
+It should be possible to use the 00Z file from 2019-12-31 and relabel its time to 12Z,
+but that would be misrepresenting what it is.  Maybe it doesn't matter either way.
+
+--------------------
+2021-11-2
+
+It is difficult to know how to proceed here. I'll try to summarize:
+1. The products are obviously qualitatively different.
+2. We do not have enough information to assess whether one or the other is better.
+3. The differences are large enough that they would have significant impact 
+   on the lowest level forecasts in certain places.
+4. It is difficult to assess how large the resulting differences 
+   will be in a reanalysis.
+5. Many of our users want the surface forcing files which 
+   are the most likely thing to be impacted.
+6. It seems unlikely that we will be able to have any impact, 
+   especially in the short-term, on how these are produced.
+
+Questions:
+1. I understand that the 'old' product is no longer available 
+   after some date in the middle of 2020. 
+   Is it accurate to say that there is no way 
+   we could produce the old product ourselves?
+2. There is obviously an overlap period with both new and old product. 
+   How long is that overlap period?
+3. How often is the new product updated? 
+   What is the most recent date for which it is currently available?
+
+Thanks, Jeff
+
+Q1; It's probably true that we can't produce the old product.
+They couldn't explain the differences, even though they presumably
+have the code(s) that produced both.  I could ask them for the codes,
+but I would expect getting them and setting them up would take
+significant time, if they would even send them.  
+Then there's a non-negligible chance that the output wouldn't match 
+either their old or new products.  
+The derivation of the products is described in at least on paper,
+but developing new code based on that seems like a tangent
+we don't want to go off on.
+
+Q2; The old dataset covers 1981-09-01...2020-04-13
+    The new dataset covers 1981-09-01...2021-10-17
+Q3: So there seems to be a 2 week lag in generating the new files.
+
+- - - - - - - -
+2021-11-5
+Ben wrote:
+https://repository.library.noaa.gov/view/noaa/30749
+The differences between v2.1 and v2.0 are:
+
+1.  Satellite NOAA-19 is replaced by MetOp-B; MetOp-A remains unchanged 
+    (MetOp-A and MetOp-B are European, polar-orbiting meteorological satellites);
+2.  The SST proxy using the regression between ice concentration and SST is replaced by 
+    using the freezing-point temperature in ice-covered oceans (Banzon et al. 2020);
+3.  The estimated ship SST bias is reduced from 0.14°C to 0.01°C. 
+    The biases of 0.14ºC and 0.01ºC are based on observations in riods 
+    1982-2000 and 2016-2019, respectively;
+4.  Ship and buoy observations from Daily ICOADS (ICOADS-D) Release 3.0.2 (R3.0.2; Liu et al. 2020) 
+    are used instead of NOAA National Centers for Environmental Prediction (NCEP) 
+    Global Telecommunications System (GTS) receipts;
+5.  Argo float observations (Argo 2000; Roemmich et al. 2001) above 5 m depth are included 
+    to ensure the best quality of SST production using all available in situ observations.
+
+=================================================
+2022-11-1
+Instructions for Will Chapman (and me).
+
+1) Check the range of files available in 
+   /gpfs/fs1/collections/rda/data/ds277.7/avhrr_2.1/YYYY
+2) Edit avhrr_sst_to_cesm_v2022.csh to set the 
+   modules (the set loaded in batch jobs may not be the same as in the interative environment)
+   date ranges (partial years require changes to the cp commands), 
+   file paths and names, 
+3) > qsub avhrr_sst_to_cesm_v2022.csh  (I've done it on casper, since it's a data processing job)
+
+4) Check the times of the yearly .nc files with 
+   > ncdump -v time $yearly.nc > $yearly.time
+   If they're sequential across the file limits, including the pre-existing file
+   onto which the new ones will be appended, proceed.
+
+5) Edit fill_version_forcing.ncl to set the output file names,
+   especially if doing partial years.
+6) Run fill... using
+   > qsub fill_sst_forcing.csh
+
+7) > ncrcat pre-existing.nc earliest_new.nc ... latest_new.nc $output.nc
+
+WARNING: Will found that the ds277.7 AVHRR files before ~2015 have a compression error
+when used with nco requiring a newer version 
+(https://sourceforge.net/p/nco/discussion/9830/thread/f8edba2908/) :
+   avhrr_sst_to_cesm_v2022.csh
+   --> module load nco/5.1.0
+   --->module load netcdf/4.9.0
+
+=======================================================
+Todo for packaging for archiving in git
+
+     Select the files to include
+     X  Commit the earliest versions (Bob's?) first, as a historical record.
+        Helen says commit all the (relevant) files and sort them out later.
+        X  DEPRECATED directory?
+             But move more files into it before gitting SST
+             and exclude it from the git add.
+        X  tomas_home_bf_31jan13.listing
+        X  0.25x0.25_160301.nc   intermediate file from Nov, 2018
+        X  config_grids+fv1deg_oi0.25.xml the one below has 2 degree too
+              and is vertion 2.0, instead of 1.0.
+        X  add_calendar_attr.csh   included in the avhrr_sst_to_cesm scripts.
+        X  compset_instructions -> f.e11.b16.F2000C5.ne120_025_bob_011bf.txt
+        X  f.e11.b16.F2000C5.ne120_025_bob_011bf.txt
+        X  domain.ocn.025.120821.nc -> gen_atm_ocn_maps/domain.ocn.025.120821.nc
+              My scripts reference domain.ocn.d025.120821.nc, which is a link to the same file.
+?             Why did I make a 2nd link, with a different name?
+                  config_grids+fv1+2deg_oi0.25_gland20.xml says that schema names are restricted;
+                  they can't begin with a number.
+        x     Links don't work in github, so copy the target into at least the d025 link.
+-
+        Then subsequent versions.
+        y  README
+        Y  resolution_instructions 
+        y  use_0.25_SSTs_instructions
+        y  date_from_daynum.csh
+        y  into_cesm2
+        X  CAM_init_SST
+        Y  config_grids+fv1+2deg_oi0.25_gland20.xml
+        y  config_grids_description.xml;  extracted pieces of config_grids+fv1deg_oi0.25.xml
+              (earlier version of config_grids, no 2deg)
+        y  license.rst
+        x  check_avhrr-only-v2.2011-2017_filled_c200218.m 
+             list of times from that file, used with matlab to check continuity.
+        X  gen_atm_ocn_maps/domain.ocn.025.120821.nc
+               copied to the name that's referenced in my scripts, etc.
+
+        gen_atm_ocn_maps; save nondata files?
+        y  README
+        y  gen_atm_ocn_maps.sh
+        y  regridbatch.bluefire.sh
+
+      
+        Make_yearly_from_daily
+        Y  avhrr_sst_to_cesm_v2022.csh
+        y  avhrr_sst_to_cesm.csh   change to avhrr_sst_to_cesm_Z0+Z12.csh
+        Y  fill_sst_forcing.csh
+        Y  fill_version_forcing.ncl
+        y  avhrr_201912-202001.csh
+        y  avhrr_sst_to_cesm_first2020.csh   more similar to avhrr_sst_to_cesm_v2022.csh
+              than avhrr_sst_to_cesm.csh, which has a bunch of the 0Z vs 12Z data set handling.
+              change to avhrr_sst_to_cesm_v2020.csh ?
+        y  qcmd_avhrr.csh
+        y  fill_sst_forcing_orig.ncl
+        Y  fill_sst_forcing.ncl
+
+        X  avhrr_sst_to_cesm_monthly.csh -> avhrr_201912-202001.csh
+        X  fill_sst_forcing_part_year.ncl    not used in any scripts; moved to DEPRECATED
+        X  qcmd_avhrr_2011.out
+           prep_files_avhrr_only.csh  Tomas'
+           make_sst_ice_forcing.csh
+           make_sst_ice_forcing.ncl; depressing; he identified the 0Z problem and implemented a fix for it that I missed.
+
+           
+     Simplify the directory structure?
+        Rename Make_yearly_from_daily?

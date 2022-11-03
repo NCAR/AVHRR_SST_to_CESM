@@ -1,0 +1,231 @@
+This was named f.e11.b16.F2000C5.ne120_025_bob_011bf.txt,
+and was had a date of Jul 31  2015, which is probably when I got it.
+
+2 Jan 2012
+
+I never got this to work - the  model crashed while trying to write out the land resstart file.
+Allison thought it may be because I did not specify ROF_GRID and GLC_GRID in:
+/glade/u/home/tomas/cesm1/cesm1_1_0_rel04/scripts/ccsm_utils/Case.template and this makes sense.
+So I changed this, but did not test because of time constratins.  To test, I would need to rebuild the case and re-run.
+
+
+
+19 Dec 2012
+
+cd ~
+mkdir cesm1/
+cd cesm1/
+svn co https://svn-ccsm-models.cgd.ucar.edu/cesm1/tags/cesm1_1_0_rel04
+
+setenv SANDBOX /glade/u/home/tomas/cesm1/cesm1_1_0_rel04
+cd $SANDBOX/scripts/ccsm_utils/Case.template
+
+cp config_grid.xml config_grid.xml_original
+diff config_grid.xml config_grid.xml_original
+77,78d76
+< <horiz_grid GLOB_GRID="0.25x0.25"   nx="1440"   ny="720"  />
+< 
+612,641d609
+< <horiz_grid GRID="ne30np4_025" SHORTNAME="ne30_025"
+<             ATM_GRID="ne30np4" LND_GRID="ne30np4" OCN_GRID="0.25x0.25"
+ICE_GRID="0.25x0.25"  ROF_GRID="r05" GLC_GRID="gland5UM"
+<             ATM_NCPL="48" OCN_NCPL="1"
+<             CAM_DYCORE="homme"
+<             CCSM_GCOST="1"
+<             ATM_DOMAIN_FILE="domain.lnd.ne30.025_025.120830.nc"
+<             LND_DOMAIN_FILE="domain.lnd.ne30.025_025.120830.nc"
+<             ICE_DOMAIN_FILE="domain.ocn.025.120830.nc"
+<             OCN_DOMAIN_FILE="domain.ocn.025.120830.nc"
+<             ATM_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             LND_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             ICE_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             OCN_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             DESC="1 deg configuration with homme atm/land grid, 0.25 deg
+ocn/ice Reynold's SST & ice." />
+< 
+< <horiz_grid GRID="ne120np4_025" SHORTNAME="ne120_025"
+<             ATM_GRID="ne120np4" LND_GRID="ne120np4" OCN_GRID="0.25x0.25"
+ICE_GRID="0.25x0.25"  ROF_GRID="r05" GLC_GRID="gland5UM"
+<             ATM_NCPL="48" OCN_NCPL="1"
+<             CAM_DYCORE="homme"
+<             CCSM_GCOST="1"
+<             ATM_DOMAIN_FILE="domain.lnd.ne120.025_025.120821.nc"
+<             LND_DOMAIN_FILE="domain.lnd.ne120.025_025.120821.nc"
+<             ICE_DOMAIN_FILE="domain.ocn.025.120821.nc"
+<             OCN_DOMAIN_FILE="domain.ocn.025.120821.nc"
+<             ATM_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             LND_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             ICE_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             OCN_DOMAIN_PATH="/glade/scratch/tomas/hr_data"
+<             DESC="0.25 deg configuration with homme atm/land grid, 0.25 deg ocn/ice Reynold's SST & ice." />
+
+------------------------------------------------------------------------------------------------------------
+cd /glade/u/home/tomas/cesm1/cesm1_1_0_rel04/scripts
+./create_newcase -mach yellowstone -compset F_2000_CAM5 -res ne120_025 -case /glade/u/home/tomas/cesm1/f.e110.r04.F2000C5.ne120_025.bob_011bf
+
+------------------------------------------------------------------------------------------------------------
+cd  cd /glade/u/home/tomas/cesm1/f.e110.r04.F2000C5.ne120_025.bob_011bf
+cp env_mach_pes.xml env_mach_pes.xml_orig
+vi env_mach_pes.xml
+ diff env_mach_pes.xml env_mach_pes.xml_orig
+62c62
+< <entry id="NTASKS_ATM"   value="10800"  />    
+---
+> <entry id="NTASKS_ATM"   value="8192"  />    
+68c68
+< <entry id="NTASKS_LND"   value="512"  />    
+---
+> <entry id="NTASKS_LND"   value="4096"  />    
+74c74
+< <entry id="NTASKS_ICE"   value="512"  />    
+---
+> <entry id="NTASKS_ICE"   value="4096"  />    
+80c80
+< <entry id="NTASKS_OCN"   value="512"  />    
+---
+> <entry id="NTASKS_OCN"   value="8192"  />    
+86c86
+< <entry id="NTASKS_CPL"   value="2048"  />    
+---
+> <entry id="NTASKS_CPL"   value="8192"  />    
+90c90
+< <entry id="NTASKS_GLC"   value="512"  />    
+---
+> <entry id="NTASKS_GLC"   value="8192"  />    
+96c96
+< <entry id="NTASKS_ROF"   value="512"  />    
+---
+> <entry id="NTASKS_ROF"   value="4096"  />    
+------------------------------------------------------------------------------------------------------------
+cp env_run.xml env_run.xml_orig
+vi env_run.xml
+diff env_run.xml env_run.xml_orig
+33c33
+< <entry id="RUN_STARTDATE"   value="2004-01-01"  />    
+---
+> <entry id="RUN_STARTDATE"   value="0001-01-01"  />    
+187c187
+< <entry id="ATM_PIO_STRIDE"   value="24"  />    
+---
+> <entry id="ATM_PIO_STRIDE"   value="-99"  />    
+190c190
+< <entry id="ATM_PIO_ROOT"   value="2"  />    
+---
+> <entry id="ATM_PIO_ROOT"   value="-99"  />    
+196c196
+< <entry id="ATM_PIO_TYPENAME"   value="pnetcdf"  />    
+---
+> <entry id="ATM_PIO_TYPENAME"   value="nothing"  />    
+------------------------------------------------------------------------------------------------------------
+./cesm_setup
+------------------------------------------------------------------------------------------------------------
+cp user_nl_cam user_nl_cam_orig
+vi user_nl_cam
+diff user_nl_cam user_nl_cam_orig 
+3,15c3
+< 
+< fincl1 = 'CAPE', 'DTV', 'DUV', 'DVV', 'KVH', 'KVM', 'OMEGAU', 'OMEGAV',
+'OMGAOMGA', 'SST', 'TKE', 'USTAR'
+< fincl2 = 'LHFLX:A', 'PS:A', 'PSL:A', 'QBOT:A', 'QREFHT:A', 'SHFLX:A',
+'TAUX:A', 'TAUY:A', 'TREFHT:A', 'TS:A', 'UBOT:A', 'VBOT:A', 'PRECC:A',
+'PRECL:A'
+< mfilt(2) =    5
+< nhtfrq(2) = -24
+< ncdata='f.e11.b16.F2000C5.ne120_025.bob_011.cam.i.2005-01-01-00000.nc'
+< energy_fixer=-1
+< nu=10e12
+< nu_p=10e12
+< nu_q=10e12
+< nu_div=25e12
+< hypervis_subcycle=2
+< dtime          = 900
+---
+>  
+------------------------------------------------------------------------------------------------------------
+cp user_nl_cpl user_nl_cpl_orig
+vi user_nl_cpl
+diff user_nl_cpl user_nl_cpl_orig
+
+diff user_nl_cpl user_nl_cpl_orig 
+92,96d91
+< atm2ocnFmapname =
+"/glade/scratch/tomas/hr_data/map_ne120_TO_re025_blin.120820.nc"
+< atm2ocnSmapname =
+"/glade/scratch/tomas/hr_data/map_ne120_TO_re025_blin.120820.nc"
+< atm2ocnVmapname =
+"/glade/scratch/tomas/hr_data/map_ne120_TO_re025_blin.120820.nc"
+< ocn2atmFmapname =
+"/glade/scratch/tomas/hr_data/map_re025_TO_ne120_aave.120820.nc"
+< ocn2atmSmapname =
+"/glade/scratch/tomas/hr_data/map_re025_TO_ne120_aave.120820.nc"
+------------------------------------------------------------------------------------------------------------
+cp user_nl_cice user_nl_cice_orig
+vi user_nl_cice
+diff user_nl_cice user_nl_cice_orig
+6,16c6,7
+< stream_domfilename = '/glade/scratch/tomas/hr_data/domain.ocn.025.120830.nc'
+< stream_fldfilename =
+'/glade/scratch/tomas/hr_data/amsr-avhrr-v2.2004-01-01_cat_2004-12-31_120829_noleap_filled.nc',
+<
+'/glade/scratch/tomas/hr_data/amsr-avhrr-v2.2005-01-01_cat_2005-12-31_120907_noleap_filled.nc',
+<
+'/glade/scratch/tomas/hr_data/amsr-avhrr-v2.2006-01-01_cat_2006-12-31_120907_noleap_filled.nc',
+<
+'/glade/scratch/tomas/hr_data/amsr-avhrr-v2.2007-01-01_cat_2007-12-31_120907_noleap_filled.nc',
+<
+'/glade/scratch/tomas/hr_data/amsr-avhrr-v2.2008-01-01_cat_2008-12-31_120907_noleap_filled.nc',
+<
+'/glade/scratch/tomas/hr_data/amsr-avhrr-v2.2009-01-01_cat_2009-12-31_120907_noleap_filled.nc',
+<
+'/glade/scratch/tomas/hr_data/amsr-avhrr-v2.2010-01-01_cat_2010-12-31_120913_noleap_filled.nc'
+< model_year_align   = 2004
+< stream_year_first  = 2004
+< stream_year_last   = 2010
+------------------------------------------------------------------------------------------------------------------------
+cp user_nl_docn user_nl_docn_orig
+vi user_nl_docn
+diff user_nl_docn user_nl_docn_orig
+diff user_nl_docn user_nl_docn_orig 
+16,18d15
+< domainfile = '/glade/scratch/tomas/hr_data/domain.ocn.025.120830.nc'
+< streams = "docn.streams.txt.prescribed 2004 2004 201"
+< 
+------------------------------------------------------------------------------------------------------------------------
+./preview_namelists
+------------------------------------------------------------------------------------------------------------------------
+cp ./CaseDocs/docn.streams.txt.prescribed docn.streams.txt.prescribed
+chmod 644 docn.streams.txt.prescribed 
+vi docn.streams.txt.prescribed
+diff docn.streams.txt.prescribed ./CaseDocs/docn.streams.txt.prescribed
+13c13
+<             /glade/scratch/tomas/hr_data
+---
+>             /glade/p/cesm/cseg//inputdata/ocn/docn7
+16c16
+<             domain.ocn.025.120830.nc
+---
+>             domain.ocn.1x1.111007.nc
+24c24
+<             /glade/scratch/tomas/hr_data
+---
+>             /glade/p/cesm/cseg//inputdata/atm/cam/sst
+27,33c27
+<             amsr-avhrr-v2.2004-01-01_cat_2004-12-31_120829_noleap_filled.nc
+<             amsr-avhrr-v2.2005-01-01_cat_2005-12-31_120907_noleap_filled.nc
+<             amsr-avhrr-v2.2006-01-01_cat_2006-12-31_120907_noleap_filled.nc
+<             amsr-avhrr-v2.2007-01-01_cat_2007-12-31_120907_noleap_filled.nc
+<             amsr-avhrr-v2.2008-01-01_cat_2008-12-31_120907_noleap_filled.nc
+<             amsr-avhrr-v2.2009-01-01_cat_2009-12-31_120907_noleap_filled.nc
+<             amsr-avhrr-v2.2010-01-01_cat_2010-12-31_120913_noleap_filled.nc
+---
+>             sst_HadOIBl_bc_1x1_clim_c101029.nc
+------------------------------------------------------------------------------------------------------------------------
+./f.e110.r04.F2000C5.ne120_025.bob_011bf.build
+------------------------------------------------------------------------------------------------------------------------
+cd /glade/scratch/f.e110.r04.F2000C5.ne120_025.bob_011bf/run/
+scp tomas@hopper.nersc.gov:/scratch/scratchdirs/tomas/f.e11.b16.F2000C5.ne120_025.bob_011/f.e11.b16.F2000C5.ne120_025.bob_011.cam.i.2005-01-01-00000.nc .
+
+------------------------------------------------------------------------------------------------------------------------
+try a 5 day test.
+Then turn on archiving and set up to run for a year 
+------------------------------------------------------------------------------------------------------------------------

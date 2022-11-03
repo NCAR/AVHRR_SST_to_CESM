@@ -1,0 +1,54 @@
+Here are steps I will (>>), or may (>), need to do 
+to update the cesm2_0_beta05 hi-res SSTs into CESM2_0.
+
+>> Find CESM or CIME documentation about new grids or resolutions.
+
+>> (re)figure out grid naming convention
+      defined 0.9x1.25_0.25x0.25_gland20
+      data ocean
+      land part 
+      glacier? even though stub?
+   http://esmci.github.io/cime/users_guide/grids.html:
+      CIME looks at the xml node GRIDS_SPEC_FILE in 
+      $CIMEROOT/config/cesm/config_files.xml
+      to identify supported out-of-the-box model grids for the target model.
+      That's filled with 
+      $CIMEROOT/config/cesm/config_grids.xml
+>>       Update this with new 
+           "domain", 
+           finite volume grids "model_grid"
+           "Mapping"
+         For FV, SE grids for ATM and LND(?)
+         the beta05 config_grids file is in ./config_grids+fv1deg_oi0.25.xml
+
+>>  arguments to create_newcase:
+     -user_grid_file /glade/p/work/raeder/Exp/GWD_TMS_CLUBB/config_grids+fv1deg_oi0.25_gland20.xml
+
+>>  What did I do to create the grid files?
+    Do I need to remake them?
+
+>   Feed a list of filenames to CESM and it will find the right time.
+    (despite the env_run.xml SST entry that says 'file', not 'file(s)')
+
+I've downloaded a couple SST files into
+     /glade/p/work/raeder/Models/CAM_init/SST/avhrr-only-v2.YYYY0101_cat_YYYY1231_filled_c130829.nc
+     where YYYY = 2010,2011
+> Some other years are available on
+     hpss: /home/tomas/ds277.7/avhrr/avhrr-only-v2.YYYY0101_cat_YYYY1231_filled_c130829.nc
+     > > > These files MUST have the 'calendar' attribute added to variable 'time',
+           in order to run CAM using NOLEAP (and maybe GREGORIAN).
+           Script add_calendar_attr.csh will do this.
+
+When I believe that I have all the parts,
+Start the pull request process:
+   fork latest CIME to my cime github
+   clone that to cheyenne
+   branch that to an SST development version
+   implement my changes
+   test using CESM program
+   issue PR
+   
+
+? Has gen_cesm_maps.sh been updated from yellowstone?
+> xxdiff gen_cesm_maps.sh $w/Models/cesm1_2_1_varres/tools/mapping/gen_mapping_files/gen_cesm_maps.sh 
+Yes.

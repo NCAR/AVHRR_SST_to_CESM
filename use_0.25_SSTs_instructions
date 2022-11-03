@@ -1,0 +1,52 @@
+(2022-11 This is somewhat outdated, but is better than ./README or resolution_instructions.
+-------------------------------------------------------------------------------------------
+
+I think that it's time to see whether the daily, 1/4 degree ocean mapping files
+I've developed (with help from Bob Tomas) are usable by someone else.
+I've filed a request to make something like this available in the CESM tags,
+but haven't heard whether or when that might happen.  Let me know if it's 
+useful.
+
+If I understand these things correctly, you should be able to build a CAM that
+uses these SSTs by:
+1) Choosing a CAM5 compset.
+   I used 
+     setenv compset "AMIP_CAM5_CLM50%BGC_CICE%PRES_DOCN%DOM_MOSART_CISM1%NOEVOLVE_SWAV"
+   which requires arguments to create_newcase: 
+     setenv compset_args "-user_compset $compset -user_pes_setby cam"
+   I also used the psuedo-tag 
+     /glade/p/work/juliob/cesm_tags/cesm1_5_beta03_clm_r162_pop_20151215_mosart1_0_14
+
+   You could try another compset, which might not need either of those arguments.
+
+2) Using the 'resolution' I defined: 
+     setenv resolution  f09_d025 (after 2018) (was 0.9x1.25_0.25x0.25_gland20)
+   which also requires arguments to create_newcase:
+     setenv user_grid \
+        "-user_grid_file /glade/p/work/raeder/Exp/GWD_TMS_CLUBB/config_grids+fv1deg_oi0.25_gland20.xml"
+
+3) Running
+   .../create_newcase -case ${caseroot} \
+                      -mach ${mach} \
+                      -res ${resolution} \
+                      ${compset_args} \
+                      ${user_grid}
+
+4) If your compset include an active CISM1, I think that you'll need
+     ./xmlchange  GLC_GRID='gland20'
+   before running case.build
+
+5) I've downloaded a couple SST files into
+     /glade/p/work/raeder/Models/CAM_init/SST/avhrr-only-v2.YYYY0101_cat_YYYY1231_filled_c130829.nc
+     where YYYY = 2010,2011
+* WARNING; these files may not have enough time slots to be used individually;
+           they may need to be strung together in the stream file.
+           Or use similar files that have an extra slot at the end.
+   Some other years are available on
+     Files with names like avhrr-only-v2.YYYY0101_cat_YYYY1231_filled_c130829.nc from Bob Tomas
+     could be used, but
+     > > > These files MUST have the 'calendar' attribute added to variable 'time',
+           in order to run CAM using NOLEAP (and maybe GREGORIAN).
+           Script add_calendar_attr.csh will do this.
+
+
