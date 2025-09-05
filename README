@@ -295,7 +295,8 @@ Instructions for Will Chapman (and me).
 
 1) Check the range of files available in 
    /gpfs/fs1/collections/rda/data/ds277.7/avhrr_2.1/YYYY
-2) Edit avhrr_sst_to_cesm_v2022.csh to set the 
+   [derecho > 2024-01-01 /glade/campaign/collections/rda/data/d277007/avhrr_v2.1/YYYY]
+2) Edit Convert_daily_to_tseries/avhrr_sst_to_cesm_v{curr_yr}.csh to set the 
    modules (the set loaded in batch jobs may not be the same as in the interative environment)
    date ranges (partial years require changes to the cp commands), 
    file paths and names, 
@@ -308,7 +309,8 @@ Instructions for Will Chapman (and me).
 
 5) Edit fill_version_forcing.ncl to set the output file names,
    especially if doing partial years.
-6) Run fill... using
+
+6) Edit and run fill_sst_forcing.csh, which runs fill_version_forcing.ncl using;
    > qsub fill_sst_forcing.csh
 
 7) > ncrcat pre-existing.nc earliest_new.nc ... latest_new.nc $output.nc
@@ -388,3 +390,132 @@ Todo for packaging for archiving in git
            
      Simplify the directory structure?
         Rename Make_yearly_from_daily?
+
+--------------------------------------
+Inventory of particularly useful SST files.
+avhrr_v2.1-only-v2.19810901_cat_20111231_filled_c221104.nc
+   Made by Will Chapman from corrected ds277.7 files; time data and metadata are consistent and 12Z.
+
+avhrr-only-v2.2011-202001_0Z_filled_c200810.nc
+   Used for CAM6+DART Reanalysis for 2011-2019
+   Made from mistaken d277007 files, which have inconsistent time data and metadata defined at 0Z daily.
+
+avhrr_v2.1-only-v2.201912-202109_12Z_filled_c211112.nc
+   Used for CAM6+DART Reanalysis for 2020
+   Made from fixed d277007 files, which have data and metadata correctly defined at 12Z daily.
+
+A single time slot file gzipped by a factor of almost 7
+but a multiyear file compressed by < .5% .
+
+-------------------------
+Will's fixes; import into my scripts?
+pre ~2015 the avhrr NC files have a compression error when used with nco requiring a newer version 
+(https://sourceforge.net/p/nco/discussion/9830/thread/f8edba2908/) :
+
+avhrr_sst_to_cesm_v2022.csh
+--> module load nco/5.1.0
+--->module load netcdf/4.9.0
+
+Also to run additional years outside of 2021/2022 the if/else statement needed modification
+#    set tar_files = `ls -1 ${dir_in}/${product}_nc_v2_${yr}??.tar`
+#    foreach tar_file ( ${tar_files} )
+#       tar -xvf ${tar_file}
+   if (! -d $yr) then
+      mkdir $yr
+      cd $yr
+      if ($yr == 2021) then
+         # Get months 10...12
+         cp ${dir_in}/${yr}/*avhrr*.${yr}1* .
+      else if ($yr == 2022) then
+         # Get months 1...9
+         cp ${dir_in}/${yr}/*avhrr*.${yr}0* .
+      else
+         cp ${dir_in}/${yr}/*avhrr*.${yr}* .
+      endif
+      echo "post cp from $dir_in : "
+      ls
+   else
+      cd $yr
+   endif
+
+------------------------------
+2025-7-3 Filling in date gaps in our avhrr_v2.1 SST+ICE data sets
+
+avhrr_v2.1-only-v2.19810901_cat_20111231_filled_c221104.nc    
+avhrr_v2.1-only-v2.19810901_cat_20111231_filled_c221104.time  
+avhrr_v2.1-only-v2.201912-202209_12Z_2019-12-30.nc            
+avhrr_v2.1-only-v2.201912-202209_12Z_filled_c221101.nc
+avhrr_v2.1-only-v2.201912-202209_12Z_filled_c221101.time
+avhrr_v2.1-only-v2.2021.time
+avhrr_v2.1-only-v2.2022.time
+
+have; avhrr_v2.1-only-v2.19810901_cat_20111231_filled_c221104.nc
+need;                    20120101-20191130
+have; avhrr_v2.1-only-v2.201912-202209_12Z_filled_c221101.nc
+need;                    20221001-20241231
+>> Check the start and end times; don't miss any.
+
+have, but not useful (old, broken avhrr files); 
+   avhrr-only-v2.2011-202001_0Z_filled_c200810.nc
+
+
+avhrr_v2.1-only-v2.19810901_cat_20111231_filled_c221104.nc
+   float time(time) ;
+		time:long_name = "Center time of the day" ;
+		time:units = "days since 1978-01-01 12:00:00" ;
+start day
+1981 - 1977 = 4 * 365 = 1460
+1980 leap year =          +1     
+198112                  - 31
+198111                  - 30
+198110                  - 31
+198109                  - 29
+                       -----
+                        1340   
+So it seems to label 1978-01-01 12:00:00 (consistently) as 0.
+   time = 1339, 1340, 1341, 1342, 1343, 1344, 1345, 1346, 1347, 1348, 1349, 
+          12412, 12413, 12414, 12415, 12416, 12417 ;
+
+avhrr_v2.1-only-v2.2012.time
+   time = 12418,... ,12783
+...
+avhrr_v2.1-only-v2.2019.time
+   time = 14975,... , 15308 ;
+
+avhrr_v2.1-only-v2.201912-202209_12Z_filled_c221101.nc
+   double time(time) ;
+		time:long_name = "Center time of the day" ;
+		time:units = "days since 1978-01-01 12:00:00" ;
+                               15309
+2019 - 1977 = 42 * 365 =      +15330
+1980, 1984, 1988, 1992, 1996, 
+2004, 2008, 2012, 2016, 2020  +   10
+201912                           -30
+                              ------
+                              -15310
+
+   time = 15309, 15310, 15311, 15312, 15313, 15314, 15315, 15316, 15317, 15318, 
+          16339, 16340, 16341, 16342, 16343 ;
+
+----------------------------------------------------
+2025-7-28
+   Ben; 2023-10; MCT is very inefficient in handling the AVHRR SST grid
+        (not sci supported; recalculation) 
+        (is this a moot point for the new (NUOPC) CESM?)
+        He sent me email about timing.
+        My analysis; /Users/raeder/DAI/ATM_forcXX/CAM6_setup/SST/cesm_timing_* , notes
+        What are the incriminating lines + numbers?
+           OCNPRE1?  min:max: .012: .031      vs 2.325: 10.25
+              ocnpre1_atm2ocn (same numbers)
+        But danger in changing the way things are done.
+        2025; Is this is especially important (?) because of the new SST file:
+              1981-2025  36 Gb.
+              or is it a completely separate issue from extracting data from a large file?
+
+    NCL is deprecated.  
+       Deprecated = no longer being developed.  Will be kept for existing tools.
+                    and packaged inside a python wrapper.
+       Will there be a replacement fill....nc script?
+       Is it even needed?  Yes (fills in land values, not diddling), 
+          but maybe should be replaced with python or other non-deprecated language.
+
