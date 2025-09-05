@@ -10,8 +10,7 @@ begin
    cyear = getenv("CYEAR")
    avhrr_version = getenv("PRODUCT")
 
-;   dir_in = "/glade/derecho/scratch/raeder/SST/" + avhrr_version + "/"
-   dir_in = "/glade/work/raeder/Exp/SST/" + avhrr_version + "/"
+   dir_in = "/glade/scratch/raeder/SST/" + avhrr_version + "/"
    dir_out = dir_in
 
    date_ymd = systemfunc("date +%y%m%d")
@@ -22,11 +21,11 @@ begin
 ;      file_out = "avhrr_v2.1-only-v2." + cyear + "_filled_c" + date_ymd + ".nc"
 
 ; Won't be entered when YYYYMM is passed as CYEAR
-   if( (cyear .eq. "2019") ) then
+   if( (cyear .eq. "2021") ) then
 ;     avhrr_v2.1-only-v2.20200101-20200607.nc
 ;     2021 has data from only v2.1, so product can be explicitly named
       file_in  = "avhrr_v2.1-only-v2." + cyear + ".nc"
-      file_out = "avhrr_v2.1-only-v2." + cyear + "0101-1130_filled_c" + date_ymd + ".nc"
+      file_out = "avhrr_v2.1-only-v2." + cyear + "0101-0930_filled_c" + date_ymd + ".nc"
    else if ( (cyear .eq. "1981") ) then
       file_in  = avhrr_version + "-only-v2." + cyear + "0901_cat_" + cyear + "1231_gregorian.nc"
       file_out = avhrr_version + "-only-v2." + cyear + "0901_cat_" + cyear + "1231_filled_c" + date_ymd + ".nc"
@@ -52,7 +51,6 @@ begin
    print("")
 
    system("cp " + dir_in + file_in + " " + dir_out + "tmp_" + file_out )
-   print("Copied " + file_in + "tmp_")
 
    f_in = addfile(dir_in +  file_in, "r")
    f_out = addfile(dir_out + "tmp_" + file_out, "w")
