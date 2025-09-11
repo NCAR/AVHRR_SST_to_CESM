@@ -2,13 +2,15 @@
 
 #PBS  -N fill_sst_forcing
 #PBS  -A P86850054
-#PBS  -q share
+#PBS  -q casper
 # Resources I want:
 #    select=#nodes
 #    ncpus=#CPUs/node
 #    mpiprocs=#MPI_tasks/node
-#PBS  -l select=1:ncpus=1:mpiprocs=1
-#PBS  -l walltime=03:00:00
+#PBS  -l select=1:ncpus=1:mpiprocs=1:ompthreads=1:mem=30GB
+# 2025; this takes a ridiculously long time on casper; 40 minutes/ (yearly) file.
+#       PRobably the 5 Gb I was requesting was too small.
+#PBS  -l walltime=06:00:00
 # Send email after a(bort) or e(nd)
 #PBS  -m ae
 #PBS  -M raeder@ucar.edu
@@ -22,7 +24,16 @@
 # expects to find an SST value but there isn't one in the Reynold's SST (there is land).
 
 # If not in my environment already:
-module swap gnu/10.1.0 gnu/8.3.0
+# module swap gnu/10.1.0 gnu/8.3.0
+# 2025 derecho
+#   ncl: ncl/6.6.2
+#       ncarenv-basic/23.10
+#       ncarenv-basic/24.12
+#       ncarenv/23.10
+#       ncarenv/24.12
+
+echo '============================================================'
+
 module load ncl
 module list
 which ncl
@@ -33,18 +44,24 @@ set echo verbose
 # set years = ( 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 \
 #                                        2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 \
 #                                        2010 2011 2012 2013 )
-set years = ( 2021 2022 )
+set years = ( 2022 2023 2024 2025 )
 # set years = ( 201912 )
 set product = avhrr_v2.1
 # set product = avhrr
-set dir_out = /glade/scratch/raeder/SST/${product}
+# The slowness is not a memory problem.
+# Maybe it's a file system problem.
+# scratch is lustre, work is gpfs (vanderwende)
+set dir_out = /glade/work/raeder/Exp/SST/${product}
+# set dir_out = /glade/derecho/scratch/raeder/SST/${product}
 
 cd ${dir_out}
 foreach year ($years)
    setenv CYEAR $year
    setenv PRODUCT $product
 #    ncl /gpfs/fs1/work/raeder/Models/CAM_init/SST/Make_yearly_from_daily/fill_sst_forcing.ncl |& tee ncl_${year}.eo
-   ncl /gpfs/fs1/work/raeder/Models/CAM_init/SST/Make_yearly_from_daily/fill_version_forcing.ncl |& tee ncl_${year}.eo
+#    ncl /gpfs/fs1/work/raeder/Models/CAM_init/SST/Make_yearly_from_daily/fill_version_forcing.ncl |& tee ncl_${year}.eo
+# 2025
+   ncl /glade/work/raeder/Models/CAM_init/SST_ssh/Convert_daily_to_tseries/fill_version_forcing.ncl |& tee ncl_${year}.eo
 
 #    ncl fill_sst_forcing.ncl
 end
